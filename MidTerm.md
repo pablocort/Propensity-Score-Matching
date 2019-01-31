@@ -1,0 +1,1219 @@
+High Note
+================
+
+Load libraries and set working environment
+------------------------------------------
+
+``` r
+library("pastecs")
+library("dplyr")
+```
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:pastecs':
+    ## 
+    ##     first, last
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
+library(Amelia)
+```
+
+    ## Loading required package: Rcpp
+
+    ## ## 
+    ## ## Amelia II: Multiple Imputation
+    ## ## (Version 1.7.5, built: 2018-05-07)
+    ## ## Copyright (C) 2005-2019 James Honaker, Gary King and Matthew Blackwell
+    ## ## Refer to http://gking.harvard.edu/amelia/ for more information
+    ## ##
+
+``` r
+library(mlbench)
+library(ggplot2)
+library(MatchIt)
+library(gridExtra)
+```
+
+    ## 
+    ## Attaching package: 'gridExtra'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     combine
+
+``` r
+library(ggcorrplot)
+library(ellipse)
+```
+
+    ## 
+    ## Attaching package: 'ellipse'
+
+    ## The following object is masked from 'package:graphics':
+    ## 
+    ##     pairs
+
+``` r
+library(caret)
+```
+
+    ## Loading required package: lattice
+
+``` r
+require(Hmisc)
+```
+
+    ## Loading required package: Hmisc
+
+    ## Warning: package 'Hmisc' was built under R version 3.5.2
+
+    ## Loading required package: survival
+
+    ## 
+    ## Attaching package: 'survival'
+
+    ## The following object is masked from 'package:caret':
+    ## 
+    ##     cluster
+
+    ## Loading required package: Formula
+
+    ## 
+    ## Attaching package: 'Hmisc'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     src, summarize
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     format.pval, units
+
+``` r
+require(RColorBrewer)
+```
+
+    ## Loading required package: RColorBrewer
+
+``` r
+setwd("/Users/shruhi/Desktop")
+HighNote <- read.csv("HighNote Data Midterm.csv")
+```
+
+Summary Statistics
+==================
+
+First we separate the datasets on the basis of the fact that a user is a premium subscriber (adopter = 1) or not (adopter = 0) and we look at the differences in the summary statistics of each.
+
+``` r
+HighNote0 <- subset(HighNote, HighNote$adopter == 0, select = c(-1))
+HighNote1 <- subset(HighNote, HighNote$adopter == 1, select = c(-1))
+
+options(scipen = 999)
+Desc0 <- stat.desc(HighNote0)
+Desc0 <- Desc0[-c(2,1,6,7,10,11,12,14),]
+Desc0 <- t(Desc0)
+Desc0
+```
+
+    ##                       nbr.na min     max       median          mean
+    ## age                        0   8      79   23.0000000    23.9484367
+    ## male                       0   0       1    1.0000000     0.6218610
+    ## friend_cnt                 0   1    4957    7.0000000    18.4916625
+    ## avg_friend_age             0   8      77   23.0000000    24.0114176
+    ## avg_friend_male            0   0       1    0.6666667     0.6165888
+    ## friend_country_cnt         0   0     129    2.0000000     3.9578908
+    ## subscriber_friend_cnt      0   0     309    0.0000000     0.4174690
+    ## songsListened              0   0 1000000 7440.0000000 17589.4415136
+    ## lovedTracks                0   0   12522   14.0000000    86.8226303
+    ## posts                      0   0   12309    0.0000000     5.2930025
+    ## playlists                  0   0      98    0.0000000     0.5492804
+    ## shouts                     0   0    7736    4.0000000    29.9726551
+    ## adopter                    0   0       0    0.0000000     0.0000000
+    ## tenure                     0   1     111   44.0000000    43.8099256
+    ## good_country               0   0       1    0.0000000     0.3577916
+    ##                             std.dev
+    ## age                       6.3718313
+    ## male                      0.4849286
+    ## friend_cnt               57.4811697
+    ## avg_friend_age            5.1041086
+    ## avg_friend_male           0.3189849
+    ## friend_country_cnt        5.7641675
+    ## subscriber_friend_cnt     2.4181507
+    ## songsListened         28416.0229266
+    ## lovedTracks             263.5804416
+    ## posts                   104.3094298
+    ## playlists                 1.0719556
+    ## shouts                  150.6897894
+    ## adopter                   0.0000000
+    ## tenure                   19.7888655
+    ## good_country              0.4793563
+
+``` r
+Desc1 <- stat.desc(HighNote1)
+Desc1 <- Desc1[-c(2,1,6,7,10,11,12,14),]
+Desc1 <- t(Desc1)
+Desc1
+```
+
+    ##                       nbr.na min    max        median          mean
+    ## age                        0   8     73    24.0000000    25.9798696
+    ## male                       0   0      1     1.0000000     0.7292316
+    ## friend_cnt                 0   1   5089    16.0000000    39.7337681
+    ## avg_friend_age             0  12     62    24.3600000    25.4413090
+    ## avg_friend_male            0   0      1     0.6666667     0.6365983
+    ## friend_country_cnt         0   0    136     4.0000000     7.1888290
+    ## subscriber_friend_cnt      0   0    287     0.0000000     1.6368018
+    ## songsListened              0   0 817290 20908.0000000 33758.0405444
+    ## lovedTracks                0   0  10220   108.0000000   264.3407995
+    ## posts                      0   0   8506     0.0000000    21.2004536
+    ## playlists                  0   0    118     1.0000000     0.9007655
+    ## shouts                     0   0  65872     9.0000000    99.4397505
+    ## adopter                    0   1      1     1.0000000     1.0000000
+    ## tenure                     0   0    111    46.0000000    45.5832152
+    ## good_country               0   0      1     0.0000000     0.2874965
+    ##                             std.dev
+    ## age                       6.8435969
+    ## male                      0.4444197
+    ## friend_cnt              117.2748963
+    ## avg_friend_age            5.2090213
+    ## avg_friend_male           0.2502875
+    ## friend_country_cnt        8.8598183
+    ## subscriber_friend_cnt     5.8499808
+    ## songsListened         43592.7275397
+    ## lovedTracks             491.4267571
+    ## posts                   221.9934445
+    ## playlists                 2.5633919
+    ## shouts                 1156.0731310
+    ## adopter                   0.0000000
+    ## tenure                   20.0437647
+    ## good_country              0.4526592
+
+``` r
+missmap(HighNote0, col = c("red", "green"), legend = FALSE, main = "Missigness Map for Non-Adopters")
+```
+
+![](MidTerm_files/figure-markdown_github/Summary%20Statistics-1.png)
+
+``` r
+missmap(HighNote1, col = c("red", "blue"), legend = FALSE, main = "Missingness Map for Adopters")
+```
+
+![](MidTerm_files/figure-markdown_github/Summary%20Statistics-2.png)
+
+> From the missingness maps, we can see that no data is missing in any of the above columns.
+> This is an indication that we have a good clean data and we can proceed with it.
+
+> Also, this is helpful when matching the data (for part 3) as MatchIt doesn't allow missing data.
+
+Now, let us compare the means of the data.
+
+``` r
+Means <- cbind("nonadopter"=Desc0[,5],"adopter" =Desc1[,5])
+Means
+```
+
+    ##                          nonadopter       adopter
+    ## age                      23.9484367    25.9798696
+    ## male                      0.6218610     0.7292316
+    ## friend_cnt               18.4916625    39.7337681
+    ## avg_friend_age           24.0114176    25.4413090
+    ## avg_friend_male           0.6165888     0.6365983
+    ## friend_country_cnt        3.9578908     7.1888290
+    ## subscriber_friend_cnt     0.4174690     1.6368018
+    ## songsListened         17589.4415136 33758.0405444
+    ## lovedTracks              86.8226303   264.3407995
+    ## posts                     5.2930025    21.2004536
+    ## playlists                 0.5492804     0.9007655
+    ## shouts                   29.9726551    99.4397505
+    ## adopter                   0.0000000     1.0000000
+    ## tenure                   43.8099256    45.5832152
+    ## good_country              0.3577916     0.2874965
+
+For almost all the factors, the average is higher for adopters than non-adopters. The average age and percentage of male friends is only slightly higher than the non-adopters. On the other hand, the posts, songs listened to, shouts and loved tracks are significantly higher for adopters. The only interesting exception is that there are more premium subscribers from countries other than US, UK and Germany than from them.
+
+Propensity Score Matching
+=========================
+
+We use PSM to test whether having subscriber friends affects the likelihood of becoming a premium subscriber.
+&gt;Our treatment and control group depends on whether a subscriber has more than one subscriber friend or not.
+
+With the propensity score matching, we try to analyze the effect of the treatment "having more than one subscriber friend" on the likelihood of a subscriber turning into a premium subscriber. So, our outcome variable is "adopter". We test the difference in means on the outcome variable.
+
+### Diff-in-means on Outcome Variable
+
+``` r
+HighNote$Treatment <- ifelse(HighNote$subscriber_friend_cnt >= 1,1,0)
+
+HighNote %>%
+  group_by(Treatment) %>%
+  summarise(count = n(),
+            proportion_ad = mean(adopter))
+```
+
+    ## # A tibble: 2 x 3
+    ##   Treatment count proportion_ad
+    ##       <dbl> <int>         <dbl>
+    ## 1         0 34004        0.0524
+    ## 2         1  9823        0.178
+
+``` r
+t.test(HighNote$adopter ~ HighNote$Treatment)
+```
+
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote$adopter by HighNote$Treatment
+    ## t = -30.961, df = 11815, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.1330281 -0.1171869
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##      0.05243501      0.17754250
+
+We see that there is a significant difference in means.
+
+Now, we test the difference in means on the pre-treatment covariates. As we don't know anything about the significance of these covariates yet, we perform a t-test on all of them to check if there is a significant difference in means in the Treatment and Control groups.
+
+### Diff-in means for Pre-Treatment Covariates
+
+``` r
+HN_cov <- c('age','male','friend_cnt',"songsListened","playlists","posts",'shouts','lovedTracks','good_country','avg_friend_age','avg_friend_male','friend_country_cnt', 'tenure')
+
+HighNote %>%
+  group_by(Treatment) %>%
+  select(one_of(HN_cov)) %>%
+  summarise_all(funs(mean(., na.rm = T)))
+```
+
+    ## Adding missing grouping variables: `Treatment`
+
+    ## # A tibble: 2 x 14
+    ##   Treatment   age  male friend_cnt songsListened playlists posts shouts
+    ##       <dbl> <dbl> <dbl>      <dbl>         <dbl>     <dbl> <dbl>  <dbl>
+    ## 1         0  23.7 0.629       10.4        14602.     0.529  2.54   16.4
+    ## 2         1  25.4 0.636       54.0        33736.     0.744 20.5   102. 
+    ## # … with 6 more variables: lovedTracks <dbl>, good_country <dbl>,
+    ## #   avg_friend_age <dbl>, avg_friend_male <dbl>, friend_country_cnt <dbl>,
+    ## #   tenure <dbl>
+
+``` r
+lapply(HN_cov, function(fn){
+  t.test(HighNote[,fn] ~ HighNote$Treatment)
+})
+```
+
+    ## [[1]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -20.841, df = 14645, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -1.778544 -1.472749
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        23.74756        25.37321 
+    ## 
+    ## 
+    ## [[2]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -1.3459, df = 15986, p-value = 0.1784
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.018236129  0.003388028
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.6288378       0.6362618 
+    ## 
+    ## 
+    ## [[3]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -33.707, df = 9903.1, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -46.12459 -41.05469
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        10.43133        54.02097 
+    ## 
+    ## 
+    ## [[4]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -41.505, df = 11447, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -20037.04 -18229.80
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        14602.22        33735.64 
+    ## 
+    ## 
+    ## [[5]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -10.492, df = 11238, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.2546958 -0.1745100
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.5294671       0.7440700 
+    ## 
+    ## 
+    ## [[6]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -7.3649, df = 9933.6, p-value = 0.0000000000001914
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -22.76492 -13.19424
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        2.543377       20.522956 
+    ## 
+    ## 
+    ## [[7]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -11.426, df = 9888.1, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -100.04703  -70.74591
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        16.42304       101.81951 
+    ## 
+    ## 
+    ## [[8]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -31.265, df = 10585, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -170.1918 -150.1102
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        65.21365       225.36465 
+    ## 
+    ## 
+    ## [[9]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = 2.0956, df = 16030, p-value = 0.03613
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  0.0007383591 0.0220968020
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.3546936       0.3432760 
+    ## 
+    ## 
+    ## [[10]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -27.658, df = 15667, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -1.744514 -1.513611
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        23.76137        25.39043 
+    ## 
+    ## 
+    ## [[11]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -7.7114, df = 23020, p-value = 0.00000000000001294
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.02846397 -0.01692672
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.6131124       0.6358077 
+    ## 
+    ## 
+    ## [[12]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -65.05, df = 10372, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -6.861271 -6.459857
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        2.725062        9.385626 
+    ## 
+    ## 
+    ## [[13]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  HighNote[, fn] by HighNote$Treatment
+    ## t = -14.696, df = 15805, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -3.792309 -2.899752
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        43.20268        46.54871
+
+Considering 0.05 significance level, the diff-in-means of the demographic variable "male" is insignificant. So,, we will not include it in our matching because it will not significantly influence the dependent variables as they are not significantly different in two groups.
+
+Propensity Score Estimation
+---------------------------
+
+We estimate the propensity score by running a logit model. For the matching to give a causal estimate in the end, we must include any covariate that is related to both the treatment assignment and potential outcomes.
+
+``` r
+logit_ps <- glm(Treatment ~ age + friend_cnt + songsListened + playlists + posts + shouts + lovedTracks + good_country + avg_friend_age + avg_friend_male + friend_country_cnt + tenure, family = binomial(), data = HighNote)
+```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+summary(logit_ps)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = Treatment ~ age + friend_cnt + songsListened + 
+    ##     playlists + posts + shouts + lovedTracks + good_country + 
+    ##     avg_friend_age + avg_friend_male + friend_country_cnt + tenure, 
+    ##     family = binomial(), data = HighNote)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -4.4154  -0.5668  -0.4221  -0.3009   2.5520  
+    ## 
+    ## Coefficients:
+    ##                         Estimate    Std. Error z value
+    ## (Intercept)        -5.1236926506  0.0756600186 -67.720
+    ## age                 0.0204304076  0.0027574828   7.409
+    ## friend_cnt          0.0313064616  0.0010333791  30.295
+    ## songsListened       0.0000070123  0.0000005107  13.731
+    ## playlists           0.0052494172  0.0119076049   0.441
+    ## posts               0.0005753522  0.0002686355   2.142
+    ## shouts             -0.0000502668  0.0000367766  -1.367
+    ## lovedTracks         0.0006685150  0.0000564391  11.845
+    ## good_country        0.0308838955  0.0292074225   1.057
+    ## avg_friend_age      0.0790367975  0.0034599931  22.843
+    ## avg_friend_male     0.2528188999  0.0502671758   5.030
+    ## friend_country_cnt  0.1105271473  0.0047506211  23.266
+    ## tenure             -0.0025335951  0.0007765903  -3.262
+    ##                                Pr(>|z|)    
+    ## (Intercept)        < 0.0000000000000002 ***
+    ## age                   0.000000000000127 ***
+    ## friend_cnt         < 0.0000000000000002 ***
+    ## songsListened      < 0.0000000000000002 ***
+    ## playlists                        0.6593    
+    ## posts                            0.0322 *  
+    ## shouts                           0.1717    
+    ## lovedTracks        < 0.0000000000000002 ***
+    ## good_country                     0.2903    
+    ## avg_friend_age     < 0.0000000000000002 ***
+    ## avg_friend_male       0.000000491753390 ***
+    ## friend_country_cnt < 0.0000000000000002 ***
+    ## tenure                           0.0011 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 46640  on 43826  degrees of freedom
+    ## Residual deviance: 34173  on 43814  degrees of freedom
+    ## AIC: 34199
+    ## 
+    ## Number of Fisher Scoring iterations: 8
+
+``` r
+prp_df <- data.frame(pr_score = predict(logit_ps, type = "response"),
+                     has_subscriber_friends = logit_ps$model$Treatment)
+head(prp_df)
+```
+
+    ##     pr_score has_subscriber_friends
+    ## 1 0.08810050                      0
+    ## 2 0.14832644                      0
+    ## 3 0.08121395                      0
+    ## 4 0.24291404                      1
+    ## 5 0.70270131                      0
+    ## 6 0.22199154                      0
+
+To get a visual idea, let us plot the propensity scores for the treatment and control group.
+
+``` r
+HighNote$prp_score <- prp_df$pr_score
+HighNote$has_subscriber_friends <- prp_df$has_subscriber_friends
+
+histbackback(split(HighNote$prp_score, HighNote$has_subscriber_friends))
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-2-1.png)
+
+Running the Matching Algorithm
+------------------------------
+
+We use the package MatchIt to run a matching algorithm on the covariates. The matched data is put into a new dataframe called matched\_data. This table has a column called "distance", which gives us the propensity score.
+
+``` r
+matching <- matchit(Treatment ~ age + friend_cnt + songsListened + playlists + posts + shouts + lovedTracks + good_country + avg_friend_age + avg_friend_male + friend_country_cnt + tenure, method = "nearest", data = HighNote, ratio = 1)
+```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+summary(matching)
+```
+
+    ## 
+    ## Call:
+    ## matchit(formula = Treatment ~ age + friend_cnt + songsListened + 
+    ##     playlists + posts + shouts + lovedTracks + good_country + 
+    ##     avg_friend_age + avg_friend_male + friend_country_cnt + tenure, 
+    ##     data = HighNote, method = "nearest", ratio = 1)
+    ## 
+    ## Summary of balance for all data:
+    ##                    Means Treated Means Control SD Control  Mean Diff
+    ## distance                  0.4635        0.1550     0.1436     0.3085
+    ## age                      25.3732       23.7476     6.2245     1.6256
+    ## friend_cnt               54.0210       10.4313    15.2769    43.5896
+    ## songsListened         33735.6404    14602.2205 23214.2898 19133.4199
+    ## playlists                 0.7441        0.5295     0.9673     0.2146
+    ## posts                    20.5230        2.5434    33.7947    17.9796
+    ## shouts                  101.8195       16.4230    79.7381    85.3965
+    ## lovedTracks             225.3647       65.2137   181.4812   160.1510
+    ## good_country              0.3433        0.3547     0.4784    -0.0114
+    ## avg_friend_age           25.3904       23.7614     5.0577     1.6291
+    ## avg_friend_male           0.6358        0.6131     0.3343     0.0227
+    ## friend_country_cnt        9.3856        2.7251     3.1024     6.6606
+    ## tenure                   46.5487       43.2027    19.7212     3.3460
+    ##                       eQQ Med   eQQ Mean     eQQ Max
+    ## distance               0.2510     0.3085      0.6843
+    ## age                    1.0000     1.6296      5.0000
+    ## friend_cnt            22.0000    43.5838   4794.0000
+    ## songsListened      15471.0000 19126.1623 653702.0000
+    ## playlists              0.0000     0.2092     26.0000
+    ## posts                  0.0000    17.8829   9535.0000
+    ## shouts                15.0000    85.1764  59168.0000
+    ## lovedTracks           65.0000   159.9562   6343.0000
+    ## good_country           0.0000     0.0114      1.0000
+    ## avg_friend_age         1.5909     1.6369     11.5000
+    ## avg_friend_male        0.0738     0.0958      0.3636
+    ## friend_country_cnt     5.0000     6.6598     95.0000
+    ## tenure                 3.0000     3.3473     10.0000
+    ## 
+    ## 
+    ## Summary of balance for matched data:
+    ##                    Means Treated Means Control SD Control Mean Diff
+    ## distance                  0.4635        0.3040     0.1914    0.1595
+    ## age                      25.3732       26.4180     8.0005   -1.0448
+    ## friend_cnt               54.0210       21.4052    23.5586   32.6158
+    ## songsListened         33735.6404    27219.9089 33842.4008 6515.7315
+    ## playlists                 0.7441        0.6720     1.3948    0.0721
+    ## posts                    20.5230        6.2695    60.7689   14.2535
+    ## shouts                  101.8195       37.2356   138.7147   64.5839
+    ## lovedTracks             225.3647      134.9342   299.0241   90.4304
+    ## good_country              0.3433        0.3615     0.4805   -0.0182
+    ## avg_friend_age           25.3904       26.5864     6.7140   -1.1960
+    ## avg_friend_male           0.6358        0.6557     0.2647   -0.0199
+    ## friend_country_cnt        9.3856        5.0768     4.6543    4.3089
+    ## tenure                   46.5487       47.6901    19.0755   -1.1414
+    ##                      eQQ Med  eQQ Mean     eQQ Max
+    ## distance              0.1087    0.1595      0.4520
+    ## age                   1.0000    1.0448      8.0000
+    ## friend_cnt           12.0000   32.6158   4794.0000
+    ## songsListened      4904.0000 6515.7315 566867.0000
+    ## playlists             0.0000    0.1106     22.0000
+    ## posts                 0.0000   14.2535   9535.0000
+    ## shouts               10.0000   64.5839  59168.0000
+    ## lovedTracks          38.0000   90.4304   6180.0000
+    ## good_country          0.0000    0.0182      1.0000
+    ## avg_friend_age        0.5000    1.2839     14.0000
+    ## avg_friend_male       0.0147    0.0329      0.1642
+    ## friend_country_cnt    2.0000    4.3089     95.0000
+    ## tenure                1.0000    1.2792      4.0000
+    ## 
+    ## Percent Balance Improvement:
+    ##                    Mean Diff. eQQ Med eQQ Mean  eQQ Max
+    ## distance              48.2996 56.7139  48.2975  33.9443
+    ## age                   35.7306  0.0000  35.8883 -60.0000
+    ## friend_cnt            25.1753 45.4545  25.1654   0.0000
+    ## songsListened         65.9458 68.3020  65.9329  13.2836
+    ## playlists             66.4144  0.0000  47.1533  15.3846
+    ## posts                 20.7240  0.0000  20.2956   0.0000
+    ## shouts                24.3717 33.3333  24.1763   0.0000
+    ## lovedTracks           43.5343 41.5385  43.4655   2.5698
+    ## good_country         -59.6007  0.0000 -59.8214   0.0000
+    ## avg_friend_age        26.5857 68.5714  21.5672 -21.7391
+    ## avg_friend_male       12.2518 80.0840  65.7176  54.8507
+    ## friend_country_cnt    35.3078 60.0000  35.3001   0.0000
+    ## tenure                65.8879 66.6667  61.7834  60.0000
+    ## 
+    ## Sample sizes:
+    ##           Control Treated
+    ## All         34004    9823
+    ## Matched      9823    9823
+    ## Unmatched   24181       0
+    ## Discarded       0       0
+
+``` r
+matched_data <- match.data(matching)
+dim(matched_data)
+```
+
+    ## [1] 19646    21
+
+``` r
+head(matched_data)
+```
+
+    ##    ID age male friend_cnt avg_friend_age avg_friend_male
+    ## 4   4  21    0         28       22.94737       0.5000000
+    ## 5   5  24    0         65       22.28302       0.9137931
+    ## 6   6  21    1         12       25.00000       0.7777778
+    ## 8   8  23    1         57       23.63636       0.5208333
+    ## 10 10  34    1         13       29.77778       1.0000000
+    ## 11 11  20    0         18       23.53846       0.6875000
+    ##    friend_country_cnt subscriber_friend_cnt songsListened lovedTracks
+    ## 4                   7                     1          1357          32
+    ## 5                   9                     0         89984          20
+    ## 6                   1                     0        124547          10
+    ## 8                  14                     1         99877         125
+    ## 10                  3                     0         15997          82
+    ## 11                 11                     1            57          15
+    ##    posts playlists shouts adopter tenure good_country Treatment prp_score
+    ## 4      0         0      1       0     25            0         1 0.2429140
+    ## 5      2         0     81       0     67            0         0 0.7027013
+    ## 6      0         1      2       0     53            1         0 0.2219915
+    ## 8     89         1     44       0     71            0         1 0.7918580
+    ## 10     0         1      3       0     49            1         0 0.2678998
+    ## 11     4         1     18       0     30            0         1 0.2767808
+    ##    has_subscriber_friends  distance weights
+    ## 4                       1 0.2429140       1
+    ## 5                       0 0.7027013       1
+    ## 6                       0 0.2219915       1
+    ## 8                       1 0.7918580       1
+    ## 10                      0 0.2678998       1
+    ## 11                      1 0.2767808       1
+
+Effects of Treatment
+--------------------
+
+The effects of treatment are analysed in three ways - 1. Visualisation 2. T-test 3. Logistic Regression
+
+### 1. Visualisation
+
+Plotting the propensity scores in a similar pattern as before, so that we can see a significant difference.
+
+``` r
+histbackback(split(matched_data$distance, matched_data$has_subscriber_friends))
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+Next, we plot the mean of each covariate against the estimated propensity score, separately by treatment status. This is to check if matching is done well. If it is, the treatment and control groups will have (near) identical means of each covariate at each value of the propensity score.
+
+``` r
+function_plot <- function(df, variable){
+  df$variable <- df[,variable]
+  df$Treatment <- as.factor(df$Treatment)
+  limits <- c(min(df$variable), max(df$variable))
+  ggplot(df, aes(x = distance, y = variable, color = Treatment))+
+           scale_color_brewer(palette="Pastel1") +
+           geom_point(alpha = 0.5, size = 1) +
+           geom_smooth(method = "lm", span = 2)+
+           xlab("Propensity Score")+
+           ylab(variable)+
+           ylim(limits)
+}
+
+  function_plot(matched_data, "age")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+``` r
+  function_plot(matched_data, "friend_cnt") + theme(legend.position = "none")
+```
+
+    ## Warning: Removed 15 rows containing missing values (geom_smooth).
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-2.png)
+
+``` r
+  function_plot(matched_data, "songsListened") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-3.png)
+
+``` r
+  function_plot(matched_data, "playlists") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-4.png)
+
+``` r
+  function_plot(matched_data, "posts") + theme(legend.position = "none")
+```
+
+    ## Warning: Removed 20 rows containing missing values (geom_smooth).
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-5.png)
+
+``` r
+  function_plot(matched_data, "shouts") + theme(legend.position = "none")
+```
+
+    ## Warning: Removed 19 rows containing missing values (geom_smooth).
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-6.png)
+
+``` r
+  function_plot(matched_data, "lovedTracks") + theme(legend.position = "none")
+```
+
+    ## Warning: Removed 2 rows containing missing values (geom_smooth).
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-7.png)
+
+``` r
+  function_plot(matched_data, "good_country") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-8.png)
+
+``` r
+  function_plot(matched_data, "avg_friend_age") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-9.png)
+
+``` r
+  function_plot(matched_data, "avg_friend_male") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-10.png)
+
+``` r
+  function_plot(matched_data, "friend_country_cnt") + theme(legend.position = "none")
+```
+
+    ## Warning: Removed 4 rows containing missing values (geom_smooth).
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-11.png)
+
+``` r
+  function_plot(matched_data, "tenure") + theme(legend.position = "none")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-5-12.png)
+
+### 2. T-Tests
+
+To get a numeric idea, we now run a t-test against for all the variables to see if there is still a significant difference in means of the variables after matching.
+
+First, we check the means. And to get a more formla idea, we perform t-tests to see the difference in significance.
+
+``` r
+matched_cov <- c('age','friend_cnt',"songsListened","playlists","posts",'shouts','lovedTracks','good_country','avg_friend_age','avg_friend_male','friend_country_cnt', 'tenure')
+
+matched_data %>%
+  group_by(Treatment) %>%
+  select(one_of(matched_cov)) %>%
+  summarise_all(funs(mean))
+```
+
+    ## Adding missing grouping variables: `Treatment`
+
+    ## # A tibble: 2 x 13
+    ##   Treatment   age friend_cnt songsListened playlists posts shouts
+    ##       <dbl> <dbl>      <dbl>         <dbl>     <dbl> <dbl>  <dbl>
+    ## 1         0  26.4       21.4        27220.     0.672  6.27   37.2
+    ## 2         1  25.4       54.0        33736.     0.744 20.5   102. 
+    ## # … with 6 more variables: lovedTracks <dbl>, good_country <dbl>,
+    ## #   avg_friend_age <dbl>, avg_friend_male <dbl>, friend_country_cnt <dbl>,
+    ## #   tenure <dbl>
+
+``` r
+lapply(matched_cov, function(fn2){
+  t.test(matched_data[,fn2] ~ matched_data$Treatment)
+})
+```
+
+    ## [[1]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = 9.7592, df = 19282, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  0.8349505 1.2546352
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        26.41800        25.37321 
+    ## 
+    ## 
+    ## [[2]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -24.855, df = 10488, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -35.18808 -30.04352
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        21.40517        54.02097 
+    ## 
+    ## 
+    ## [[3]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -11.642, df = 18439, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -7612.782 -5418.681
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        27219.91        33735.64 
+    ## 
+    ## 
+    ## [[4]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -2.9701, df = 17743, p-value = 0.002981
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.11964186 -0.02450962
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.6719943       0.7440700 
+    ## 
+    ## 
+    ## [[5]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -5.6778, df = 11063, p-value = 0.00000001399
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -19.17429  -9.33268
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##         6.26947        20.52296 
+    ## 
+    ## 
+    ## [[6]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -8.5073, df = 10512, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -79.46493 -49.70295
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        37.23557       101.81951 
+    ## 
+    ## 
+    ## [[7]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -15.424, df = 16085, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -101.9222  -78.9386
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        134.9342        225.3647 
+    ## 
+    ## 
+    ## [[8]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = 2.6737, df = 19641, p-value = 0.007509
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  0.004863394 0.031581684
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.3614985       0.3432760 
+    ## 
+    ## 
+    ## [[9]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = 13.992, df = 18434, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  1.028425 1.363504
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        26.58639        25.39043 
+    ## 
+    ## 
+    ## [[10]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = 5.6307, df = 19263, p-value = 0.0000000182
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  0.01298231 0.02684722
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##       0.6557225       0.6358077 
+    ## 
+    ## 
+    ## [[11]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = -38.685, df = 13879, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -4.527193 -4.090541
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        5.076759        9.385626 
+    ## 
+    ## 
+    ## [[12]]
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data[, fn2] by matched_data$Treatment
+    ## t = 4.1015, df = 19607, p-value = 0.00004121
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  0.5959372 1.6868684
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##        47.69012        46.54871
+
+> Effects of Treatment on Outcome
+
+Let us test the matched data on our outcome variable, likeliness to be adopter.
+
+``` r
+t.test(matched_data$adopter ~ matched_data$Treatment)
+```
+
+    ## 
+    ##  Welch Two Sample t-test
+    ## 
+    ## data:  matched_data$adopter by matched_data$Treatment
+    ## t = -18.938, df = 18060, p-value < 0.00000000000000022
+    ## alternative hypothesis: true difference in means is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -0.10009352 -0.08131745
+    ## sample estimates:
+    ## mean in group 0 mean in group 1 
+    ##      0.08683702      0.17754250
+
+The mean of number of non-adopters has increased, while that of number of adopters remains the same. This could be explained in a way that, having no treatment increases the chances of a subscriber to be a non-adopter. However, it does not mean that having treatment increases chances of being an adopter.
+
+Logistic Regression
+===================
+
+``` r
+logit_reg <- glm(adopter ~ age + friend_cnt + songsListened + playlists + posts + shouts + lovedTracks + good_country + avg_friend_age + subscriber_friend_cnt + avg_friend_male + friend_country_cnt + tenure, family = binomial(), data = HighNote)
+
+summary(logit_reg)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = adopter ~ age + friend_cnt + songsListened + playlists + 
+    ##     posts + shouts + lovedTracks + good_country + avg_friend_age + 
+    ##     subscriber_friend_cnt + avg_friend_male + friend_country_cnt + 
+    ##     tenure, family = binomial(), data = HighNote)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -5.3437  -0.4072  -0.3491  -0.3037   2.6520  
+    ## 
+    ## Coefficients:
+    ##                            Estimate    Std. Error z value
+    ## (Intercept)           -3.9615618727  0.0923308458 -42.906
+    ## age                    0.0257786606  0.0033723536   7.644
+    ## friend_cnt            -0.0040466229  0.0004939263  -8.193
+    ## songsListened          0.0000082706  0.0000005182  15.962
+    ## playlists              0.0565834289  0.0132306987   4.277
+    ## posts                  0.0000943928  0.0000953025   0.990
+    ## shouts                 0.0000830204  0.0000778531   1.066
+    ## lovedTracks            0.0007052225  0.0000492806  14.310
+    ## good_country          -0.4250839681  0.0407565783 -10.430
+    ## avg_friend_age         0.0250698828  0.0044684240   5.610
+    ## subscriber_friend_cnt  0.0895829710  0.0107184894   8.358
+    ## avg_friend_male        0.1289457762  0.0634187968   2.033
+    ## friend_country_cnt     0.0393785405  0.0036293511  10.850
+    ## tenure                -0.0041147806  0.0010233249  -4.021
+    ##                                   Pr(>|z|)    
+    ## (Intercept)           < 0.0000000000000002 ***
+    ## age                   0.000000000000021039 ***
+    ## friend_cnt            0.000000000000000255 ***
+    ## songsListened         < 0.0000000000000002 ***
+    ## playlists             0.000018970346308771 ***
+    ## posts                                0.322    
+    ## shouts                               0.286    
+    ## lovedTracks           < 0.0000000000000002 ***
+    ## good_country          < 0.0000000000000002 ***
+    ## avg_friend_age        0.000000020179766023 ***
+    ## subscriber_friend_cnt < 0.0000000000000002 ***
+    ## avg_friend_male                      0.042 *  
+    ## friend_country_cnt    < 0.0000000000000002 ***
+    ## tenure                0.000057953755954740 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 24537  on 43826  degrees of freedom
+    ## Residual deviance: 22715  on 43813  degrees of freedom
+    ## AIC: 22743
+    ## 
+    ## Number of Fisher Scoring iterations: 5
+
+``` r
+Odds_Ratio <- exp(coefficients(logit_reg))
+Odds_Ratio
+```
+
+    ##           (Intercept)                   age            friend_cnt 
+    ##            0.01903336            1.02611380            0.99596155 
+    ##         songsListened             playlists                 posts 
+    ##            1.00000827            1.05821490            1.00009440 
+    ##                shouts           lovedTracks          good_country 
+    ##            1.00008302            1.00070547            0.65371489 
+    ##        avg_friend_age subscriber_friend_cnt       avg_friend_male 
+    ##            1.02538677            1.09371808            1.13762844 
+    ##    friend_country_cnt                tenure 
+    ##            1.04016415            0.99589367
+
+Odds Ratio means that for a one unit increase in each covariate, the odds of being an adopter (versus not being an adopter) increase by a factor of it's odds ratio. This means that the factors that have an odds ratio below 1 are negatively correlateed to the outcome variable.
+
+From our regression, we see that "shouts" and "posts" have an odds ratio that is 1. This means that they don't really have an effect on the likelihood of a subscriber being a premium one. The same can be seen from the p-value of these variables, which also indicates insignificance.
+
+The variables negatively correlated with the likelihood of being an adopter are "friend\_cnt", "tenure", and "good country". Out of these three, good country has the lowest odds ratio, meaning that a person not being a from UK, US or Germany is much likely to be an adopter. The same can be observed from the intercept. While "tenure" and "friend count" are negatively correlated, their negative effect is very small as the odds ratio is very close to one and the same can be seen from the intercept.
+
+The variables positively correlated with the likelihood of being an adopter are "age", "Songs listened", "playlists", "Loved Tracks", "Avg friend age", "subscriber friend count", "Proportion of male friends", "Friend country count". While having an odds ratio over 1, "Songs listened" has a value very close to zero and so the positive effect of it on likelihood of being an adopter is marginal.
+
+Finally, I want to check for correlations between any variables so that the effect of that can also be eliminated.
+
+``` r
+var <- data.frame(HighNote[,c(2:13,15,16)])
+corr <- cor(var)
+ggcorrplot(corr, hc.order = TRUE, type = "lower", lab = TRUE, method = "circle")
+```
+
+![](MidTerm_files/figure-markdown_github/unnamed-chunk-10-1.png)
+
+By considering high correlation as more than or equal to 0.7, I observe that the following pairs arr correlated - 1. age - average friend age 2. friend count - subscriber friend count 3. friend country count - friend count
+
+So, my list of variables to be considered as having an impact on the likelihood of being an adopter comes down to - age, proportion of male friends, friend country count, subscriber friend count, Loved Tracks, playlists, good country.
+
+Now, we run a regression again with these variables.
+
+``` r
+logit_reg2 <- glm(adopter ~ age + avg_friend_male + friend_country_cnt + subscriber_friend_cnt + lovedTracks + playlists + good_country, family = binomial(), data = HighNote)
+
+summary(logit_reg2)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = adopter ~ age + avg_friend_male + friend_country_cnt + 
+    ##     subscriber_friend_cnt + lovedTracks + playlists + good_country, 
+    ##     family = binomial(), data = HighNote)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -6.0672  -0.4091  -0.3620  -0.3168   2.6265  
+    ## 
+    ## Coefficients:
+    ##                         Estimate Std. Error z value             Pr(>|z|)
+    ## (Intercept)           -3.7217687  0.0753426 -49.398 < 0.0000000000000002
+    ## age                    0.0379902  0.0024272  15.652 < 0.0000000000000002
+    ## avg_friend_male        0.1886387  0.0608234   3.101              0.00193
+    ## friend_country_cnt     0.0287796  0.0030524   9.429 < 0.0000000000000002
+    ## subscriber_friend_cnt  0.0557710  0.0104566   5.334         0.0000000963
+    ## lovedTracks            0.0008461  0.0000493  17.162 < 0.0000000000000002
+    ## playlists              0.0701651  0.0136304   5.148         0.0000002637
+    ## good_country          -0.4039268  0.0403433 -10.012 < 0.0000000000000002
+    ##                          
+    ## (Intercept)           ***
+    ## age                   ***
+    ## avg_friend_male       ** 
+    ## friend_country_cnt    ***
+    ## subscriber_friend_cnt ***
+    ## lovedTracks           ***
+    ## playlists             ***
+    ## good_country          ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 24537  on 43826  degrees of freedom
+    ## Residual deviance: 23088  on 43819  degrees of freedom
+    ## AIC: 23104
+    ## 
+    ## Number of Fisher Scoring iterations: 5
+
+We get a better model with all significant variables.
